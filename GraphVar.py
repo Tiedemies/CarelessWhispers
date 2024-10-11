@@ -24,7 +24,7 @@ class GraphVar:
         self._initialize_matrices()
     
     ## Create the VAR matrices from the graph. 
-    def initialize_matrices(self):
+    def _initialize_matrices(self):
         ## We use an uniform A matrix. 
         ## The model for each vertex u is a VAR model of the form:
         ## x(u)_t = A * x(u)_{t-1} + kappa* sum_{v in N(u)} w(u,v) * B * x(v)_{t-1} + noise
@@ -32,14 +32,17 @@ class GraphVar:
 
         ## First we generate A, to be a random matrix with eigenvalues in the unit circle.
         A = np.random.rand(self.k, self.k)
+        ## Make A heavier on the diagonal.
+        A = A + np.eye(self.k)
+        ## Normalize A to have eigenvalues strictly inside the unit circle.
         A = la.orth(A)
-        A = A / np.abs(la.eigvals(A)).max()
+        A = A / (np.abs(la.eigvals(A)).max() + 0.1)
         self.A = A
 
         ## We generate the coupling matrix B, to be a random matrix with eigenvalues in the unit circle.
         B = np.random.rand(self.k, self.k)
         B = la.orth(B)
-        B = B / np.abs(la.eigvals(B)).max()
+        B = B / (np.abs(la.eigvals(B)).max() + 0.1)
         self.B = B
 
     def intialize_vectors(self):
@@ -60,7 +63,7 @@ class GraphVar:
         sum_coupling = np.zeros(self.k)
         for v in self.graph.neighbors(u):
             sum_coupling += self.graph[u,v] * self.B @ self.x[v]
-        return self.A @ self.x[u] + self.kappa * sum_coupling + np.random.standard_normal(self.k)
+        return self.A @ self.x[u] + self.kappa * sum_coupling + 0.1*np.random.standard_normal(self.k)
     
 
     ## Generate a random time series for the graph.
